@@ -32,17 +32,20 @@ public final class MovingObjectUpdateScheduler {
         this.eighthSimulation.clear();
         this.sixteenthSimulation.clear();
         float averageFps = GameWindow.averageFPS;
+        /*
         if (GameServer.server) {
             ZombieCountOptimiser.startCount();
         }
+         */
 
         for (IsoMovingObject isoMovingObject : IsoWorld.instance.getCell().getObjectList()) {
             if (GameServer.server && isoMovingObject instanceof IsoZombie isoZombie) {
                 if (GameServer.guiCommandline) {
                     isoZombie.updateForServerGui();
                 }
-
+                /*
                 ZombieCountOptimiser.incrementZombie(isoZombie);
+                 */
             } else {
                 if (isoMovingObject.getCurrentSquare() == null) {
                     isoMovingObject.setCurrentSquareFromPosition();
@@ -164,9 +167,11 @@ public final class MovingObjectUpdateScheduler {
     }
 
     public void postupdate() {
+        /*
         if (GameServer.server) {
             ZombieCountOptimiser.deleteZombies();
         }
+        */
 
         GameTime.getInstance().perObjectMultiplier = 1.0F;
         this.fullSimulation.postupdate((int)this.frameCounter);
