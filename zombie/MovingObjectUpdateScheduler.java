@@ -33,9 +33,9 @@ public final class MovingObjectUpdateScheduler {
         PZArrayUtil.forEach(this.simulationLevels, MovingObjectUpdateSchedulerUpdateBucket::clear);
         float averageFps = GameWindow.averageFPS;
 
-        if (GameServer.server) {
+        /*if (GameServer.server) {
             ZombieCountOptimiser.prepareZombiesForDeletion();
-        }
+        }*/
 
         for (IsoMovingObject isoMovingObject : IsoWorld.instance.getCell().getObjectList()) {
             if (GameServer.server && isoMovingObject instanceof IsoZombie isoZombie) {
@@ -145,9 +145,9 @@ public final class MovingObjectUpdateScheduler {
     }
 
     public void postupdate() {
-        if (GameServer.server) {
+        /*if (GameServer.server) {
             ZombieCountOptimiser.deleteZombies();
-        }
+        }*/
 
         for (MovingObjectUpdateSchedulerUpdateBucket simulation : this.simulationLevels) {
             simulation.postupdate((int)this.frameCounter);
