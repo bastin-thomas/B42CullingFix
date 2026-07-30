@@ -1,4 +1,4 @@
-#OBSELETE
+# OBSELETE
 SINCE B42.20.0 this mod is obselete. You can disable culling using Config. Please refer to PZ Wiki.
 
 
