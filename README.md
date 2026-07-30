@@ -1,6 +1,13 @@
+#OBSELETE
+SINCE B42.20.0 this mod is obselete. You can disable culling using Config. Please refer to PZ Wiki.
+
+
+
+
+
+```
 # B42CullingFix
 This is a Java mod for Dedicated Servers ONLY
-
 
 # How To Install the Mod:
 - Go to your Project Zomboid ```Server``` Folder 
@@ -15,3 +22,4 @@ Using this java mod on a unrecommended version of the game will occur on crashes
 
 ## AutoUpdate.bat
 You can see a batch file that contain an automated batch script to get latest release of the mod directly from the web. This is for advanced user, please change path where the zip file is copied temporarly and where it is unzip (should be in server's Java folder). 
+```
