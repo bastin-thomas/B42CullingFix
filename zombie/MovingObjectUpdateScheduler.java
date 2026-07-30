@@ -1,7 +1,6 @@
 // Decompiled with Zomboid Decompiler v0.3.0 using Vineflower.
 package zombie;
 
-import java.util.ArrayList;
 import zombie.characters.IsoPlayer;
 import zombie.characters.IsoZombie;
 import zombie.core.math.PZMath;
@@ -9,16 +8,21 @@ import zombie.iso.IsoMovingObject;
 import zombie.iso.IsoWorld;
 import zombie.network.GameServer;
 import zombie.popman.ZombieCountOptimiser;
+import zombie.util.list.PZArrayUtil;
 
 public final class MovingObjectUpdateScheduler {
-    public static final MovingObjectUpdateScheduler instance = new MovingObjectUpdateScheduler();
-    final MovingObjectUpdateSchedulerUpdateBucket fullSimulation = new MovingObjectUpdateSchedulerUpdateBucket(1);
-    final MovingObjectUpdateSchedulerUpdateBucket halfSimulation = new MovingObjectUpdateSchedulerUpdateBucket(2);
-    final MovingObjectUpdateSchedulerUpdateBucket quarterSimulation = new MovingObjectUpdateSchedulerUpdateBucket(4);
-    final MovingObjectUpdateSchedulerUpdateBucket eighthSimulation = new MovingObjectUpdateSchedulerUpdateBucket(8);
-    final MovingObjectUpdateSchedulerUpdateBucket sixteenthSimulation = new MovingObjectUpdateSchedulerUpdateBucket(16);
-    long frameCounter;
+    public static final zombie.MovingObjectUpdateScheduler instance = new zombie.MovingObjectUpdateScheduler();
+    private final MovingObjectUpdateSchedulerUpdateBucket[] simulationLevels;
+    private long frameCounter;
     private boolean isEnabled = true;
+
+    private MovingObjectUpdateScheduler() {
+        this.simulationLevels = new MovingObjectUpdateSchedulerUpdateBucket[UpdateSchedulerSimulationLevel.numValues()];
+
+        for (UpdateSchedulerSimulationLevel simulationLevel : UpdateSchedulerSimulationLevel.allValues()) {
+            this.simulationLevels[simulationLevel.getUpdateOrderIndex()] = new MovingObjectUpdateSchedulerUpdateBucket(simulationLevel);
+        }
+    }
 
     public long getFrameCounter() {
         return this.frameCounter;
@@ -26,48 +30,25 @@ public final class MovingObjectUpdateScheduler {
 
     public void startFrame() {
         this.frameCounter++;
-        this.fullSimulation.clear();
-        this.halfSimulation.clear();
-        this.quarterSimulation.clear();
-        this.eighthSimulation.clear();
-        this.sixteenthSimulation.clear();
+        PZArrayUtil.forEach(this.simulationLevels, MovingObjectUpdateSchedulerUpdateBucket::clear);
         float averageFps = GameWindow.averageFPS;
-        /*
+
         if (GameServer.server) {
-            ZombieCountOptimiser.startCount();
+            ZombieCountOptimiser.prepareZombiesForDeletion();
         }
-         */
 
         for (IsoMovingObject isoMovingObject : IsoWorld.instance.getCell().getObjectList()) {
             if (GameServer.server && isoMovingObject instanceof IsoZombie isoZombie) {
                 if (GameServer.guiCommandline) {
                     isoZombie.updateForServerGui();
                 }
-                /*
-                ZombieCountOptimiser.incrementZombie(isoZombie);
-                 */
             } else {
                 if (isoMovingObject.getCurrentSquare() == null) {
                     isoMovingObject.setCurrentSquareFromPosition();
                 }
 
-                switch (this.getUpdateSchedulerSimulationLevelForObject(isoMovingObject, averageFps)) {
-                    case FULL:
-                        this.fullSimulation.add(isoMovingObject);
-                        break;
-                    case HALF:
-                        this.halfSimulation.add(isoMovingObject);
-                        break;
-                    case QUARTER:
-                        this.quarterSimulation.add(isoMovingObject);
-                        break;
-                    case EIGHTH:
-                        this.eighthSimulation.add(isoMovingObject);
-                        break;
-                    case SIXTEENTH:
-                        this.sixteenthSimulation.add(isoMovingObject);
-                    case null:
-                }
+                UpdateSchedulerSimulationLevel sim = this.getUpdateSchedulerSimulationLevelForObject(isoMovingObject, averageFps);
+                this.simulationLevels[sim.getUpdateOrderIndex()].add(isoMovingObject);
             }
         }
     }
@@ -158,36 +139,19 @@ public final class MovingObjectUpdateScheduler {
     }
 
     public void update() {
-        GameTime.getInstance().perObjectMultiplier = 1.0F;
-        this.fullSimulation.update((int)this.frameCounter);
-        this.halfSimulation.update((int)this.frameCounter);
-        this.quarterSimulation.update((int)this.frameCounter);
-        this.eighthSimulation.update((int)this.frameCounter);
-        this.sixteenthSimulation.update((int)this.frameCounter);
+        for (MovingObjectUpdateSchedulerUpdateBucket simulation : this.simulationLevels) {
+            simulation.update((int)this.frameCounter);
+        }
     }
 
     public void postupdate() {
-        /*
         if (GameServer.server) {
             ZombieCountOptimiser.deleteZombies();
         }
-        */
 
-        GameTime.getInstance().perObjectMultiplier = 1.0F;
-        this.fullSimulation.postupdate((int)this.frameCounter);
-        this.halfSimulation.postupdate((int)this.frameCounter);
-        this.quarterSimulation.postupdate((int)this.frameCounter);
-        this.eighthSimulation.postupdate((int)this.frameCounter);
-        this.sixteenthSimulation.postupdate((int)this.frameCounter);
-    }
-
-    public void updateAnimation() {
-        GameTime.getInstance().perObjectMultiplier = 1.0F;
-        this.fullSimulation.updateAnimation((int)this.frameCounter);
-        this.halfSimulation.updateAnimation((int)this.frameCounter);
-        this.quarterSimulation.updateAnimation((int)this.frameCounter);
-        this.eighthSimulation.updateAnimation((int)this.frameCounter);
-        this.sixteenthSimulation.updateAnimation((int)this.frameCounter);
+        for (MovingObjectUpdateSchedulerUpdateBucket simulation : this.simulationLevels) {
+            simulation.postupdate((int)this.frameCounter);
+        }
     }
 
     public boolean isEnabled() {
@@ -199,14 +163,6 @@ public final class MovingObjectUpdateScheduler {
     }
 
     public void removeObject(IsoMovingObject object) {
-        this.fullSimulation.removeObject(object);
-        this.halfSimulation.removeObject(object);
-        this.quarterSimulation.removeObject(object);
-        this.eighthSimulation.removeObject(object);
-        this.sixteenthSimulation.removeObject(object);
-    }
-
-    public ArrayList<IsoMovingObject> getBucket() {
-        return this.fullSimulation.getBucket((int)this.frameCounter);
+        PZArrayUtil.forEach(this.simulationLevels, object, MovingObjectUpdateSchedulerUpdateBucket::removeObject);
     }
 }
